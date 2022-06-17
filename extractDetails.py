@@ -1,3 +1,5 @@
+import re
+
 class Extract:
     """
     ----RedTron Python Development Team Tasks----
@@ -5,7 +7,7 @@ class Extract:
     Author : A S Adithiyaa
     Email : 1by20ai001@bmsit.in
 
-    Description : Used for extracting the phone number and email details from any file type.
+    Description : Used for extracting all phone numbers and email details from any file type.
     
     Syntax : 
         >>> extract_object = Extract(<path_to_targetfile>)
@@ -30,21 +32,38 @@ class Extract:
         """
 
         f = open(self.file_name, "r")
-        contents = f.read()
-        contents = contents.split(",")
+        text = f.read()
 
-        for content in contents:
-            content = content.strip()
-            if "@" in content:
-                self.email_ids.append(content)
-            elif content.isdigit():
-                self.phone_numbers.append(content)
+        IndianNumber = re.compile(r'''(
+        ([+]\d{1,2})
+        (\d{3,10})
+        )''',re.VERBOSE)
+
+        phoneRegex = re.compile(r'''((\d{3}|\(\d{3}\))?(\s|-|\.)(\d{3})(\s|-|\.)(\d{4})(\s*(ext|x|ext.)\s*(\d{2,5}))?)''', re.VERBOSE)
+
+        emailRegex = re.compile(r'''([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+(\.[a-zA-Z]{2,4}))''', re.VERBOSE)
+
+
+        phone_groups = phoneRegex.findall(text)
+        email_groups = emailRegex.findall(text)
+        Indian_Contacts = IndianNumber.findall(text)
+
+        for group in phone_groups:
+            self.phone_numbers.append(group[0])
+
+        for group in Indian_Contacts:
+            if group[1] == '+91':
+                phoneNum = group[1] + group[2]
+            self.phone_numbers.append(phoneNum)
+
+        for group in email_groups:
+            self.email_ids.append(group[0])
 
         return (self.phone_numbers, self.email_ids)
 
 
 if __name__ == "__main__":
-    my_extract = Extract("./Data/extractDetails.txt")
+    my_extract = Extract(r"./Data/extractDetails.txt")
     phones, emails = my_extract.get_details()
     print(phones)
     print(emails)
