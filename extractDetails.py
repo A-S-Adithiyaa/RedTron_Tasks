@@ -1,4 +1,7 @@
 import re
+import textract
+import PyPDF2 
+
 
 class Extract:
     """
@@ -22,17 +25,30 @@ class Extract:
 
     def __init__(self, file_name):
         self.file_name = file_name
+        self.text = str()
         self.phone_numbers = list()
         self.email_ids = list()
     
+
+    def get_contents(self):
+        if (self.file_name.endswith(".pdf")):
+            pdfFileObj = open(self.file_name, 'rb') 
+            pdfReader = PyPDF2.PdfFileReader(pdfFileObj) 
+            pages = pdfReader.numPages
+            for page in range(pages):
+                pageObj = pdfReader.getPage(page) 
+                self.text += pageObj.extractText()
+        else:
+            self.text = textract.process(self.file_name)
+            self.text = self.text.decode("utf-8") 
+
 
     def get_details(self):
         """
         Function to read the file contents and seperate the phone number and email.
         """
 
-        f = open(self.file_name, "r")
-        text = f.read()
+        self.get_contents()
 
         IndianNumber = re.compile(r'''(
         ([+]\d{1,2})
@@ -44,9 +60,9 @@ class Extract:
         emailRegex = re.compile(r'''([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+(\.[a-zA-Z]{2,4}))''', re.VERBOSE)
 
 
-        phone_groups = phoneRegex.findall(text)
-        email_groups = emailRegex.findall(text)
-        Indian_Contacts = IndianNumber.findall(text)
+        phone_groups = phoneRegex.findall(self.text)
+        email_groups = emailRegex.findall(self.text)
+        Indian_Contacts = IndianNumber.findall(self.text)
 
         for group in phone_groups:
             self.phone_numbers.append(group[0])
@@ -63,7 +79,9 @@ class Extract:
 
 
 if __name__ == "__main__":
-    my_extract = Extract(r"./Data/extractDetails.txt")
-    phones, emails = my_extract.get_details()
-    print(phones)
-    print(emails)
+    files = ["extractDetails.pdf", "extractDetails.csv", "extractDetails.xls", "extractDetails.docx", "extractDetails.json", "extractDetails.txt", "extractDetails.html"]
+    for file in files:
+        my_extract = Extract("./Data/" + file)
+        phones, emails = my_extract.get_details()
+        print(phones)
+        print(emails)
